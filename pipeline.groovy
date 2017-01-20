@@ -55,9 +55,9 @@ node('maven') {
 
        for t in \$(echo "jar;war;ear" | tr ";" "\\n"); do
           if [[ "${env.BUILD_CONTEXT_DIR}" ]] && [[ "${env.BUILD_CONTEXT_DIR}" != null ]]; then
-            cp -rfv ${env.BUILD_CONTEXT_DIR}/target/*.\$t oc-build/deployments/ 2> /dev/null
+            cp -rfv ${env.BUILD_CONTEXT_DIR}/target/*.\$t oc-build/deployments/
           else
-            cp -rfv ./target/*.\$t oc-build/deployments/ 2> /dev/null
+            cp -rfv ./target/*.\$t oc-build/deployments/
           fi
        done
 
