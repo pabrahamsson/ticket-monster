@@ -1,0 +1,22 @@
+kind: "BuildConfig"
+apiVersion: "v1"
+metadata:
+  name: "sample-pipeline"
+spec:
+  source:
+    type: "Git"
+    git:
+      uri: "https://github.com/etsauer/ticket-monster.git"
+      ref: "2.7.0.Final-with-tutorials"
+  triggers:
+  - type: "GitHub"
+    github:
+      secret: "secret101"
+  - type: "ConfigChange"
+  strategy:
+    type: "JenkinsPipeline"
+    jenkinsPipelineStrategy:
+      jenkinsfilePath: "pipeline.groovy"
+    env:
+      - name: "BUILD_CONTEXT_DIR"
+        value: "demo"

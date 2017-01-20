@@ -1,12 +1,20 @@
 #!/usr/bin/groovy
 
+////
+// This pipeline requires the following plugins:
+// EnvInject: https://wiki.jenkins-ci.org/display/JENKINS/EnvInject+Plugin
+// Pipeline Maven Plugin: https://wiki.jenkins-ci.org/display/JENKINS/Pipeline+Maven+Plugin
+////
+
 String ocpApiServer = env.OCP_API_SERVER ? "${env.OCP_API_SERVER}" : "https://openshift.default.svc.cluster.local"
 
 node('maven') {
-  def artifactory = Artifactory.server(env.ARTIFACTORY_SERVER)
-  def artifactoryMaven = Artifactory.newMavenBuild()
-  def buildInfo = Artifactory.newBuildInfo()
-  def scannerHome = tool env.SONARQUBE_TOOL
+//  def artifactory = Artifactory.server(env.ARTIFACTORY_SERVER)
+  // def artifactoryMaven = Artifactory.newMavenBuild()
+  // def buildInfo = Artifactory.newBuildInfo()
+  // def scannerHome = tool env.SONARQUBE_TOOL
+  def mvnHome = "/usr/share/maven/"
+  def mvnCmd = "${mvnHome}/bin/mvn -s ./settings.xml"
   def namespace = readFile('/var/run/secrets/kubernetes.io/serviceaccount/namespace').trim()
   def token = readFile('/var/run/secrets/kubernetes.io/serviceaccount/token').trim()
   def ocCmd = "oc --token=${token} --server=${ocpApiServer} --certificate-authority=/run/secrets/kubernetes.io/serviceaccount/ca.crt --namespace=${namespace}"
@@ -18,22 +26,23 @@ node('maven') {
 
   stage('Build') {
 
-    artifactoryMaven.tool = env.MAVEN_TOOL
+    // artifactoryMaven.tool = env.MAVEN_TOOL
     // artifactoryMaven.deployer releaseRepo: env.ARTIFACTORY_DEPLOY_RELEASE_REPO, snapshotRepo: env.ARTIFACTORY_DEPLOY_SNAPSHOT_REPO, server: artifactory
     // artifactoryMaven.resolver releaseRepo: env.ARTIFACTORY_RESOLVE_RELEASE_REPO, snapshotRepo:env.ARTIFACTORY_RESOLVE_SNAPSHOT_REPO, server: artifactory
-    buildInfo.env.capture = true
-    buildInfo.retention maxBuilds: 10, maxDays: 7, deleteBuildArtifacts: true
-
-    artifactoryMaven.run pom: pomFileLocation , goals: 'clean install', buildInfo: buildInfo
-    artifactory.publishBuildInfo buildInfo
+    // buildInfo.env.capture = true
+    // buildInfo.retention maxBuilds: 10, maxDays: 7, deleteBuildArtifacts: true
+    //
+    // artifactoryMaven.run pom: pomFileLocation , goals: 'clean install', buildInfo: buildInfo
+    // artifactory.publishBuildInfo buildInfo
+    sh "${mvnCmd} clean install -DskipTests=true"
 
   }
 
-  stage('SonarQube scan') {
-    withSonarQubeEnv {
-        artifactoryMaven.run pom: pomFileLocation, goals: 'org.sonarsource.scanner.maven:sonar-maven-plugin:3.2:sonar'
-    }
-  }
+  // stage('SonarQube scan') {
+  //   withSonarQubeEnv {
+  //       artifactoryMaven.run pom: pomFileLocation, goals: 'org.sonarsource.scanner.maven:sonar-maven-plugin:3.2:sonar'
+  //   }
+  // }
 
 
   stage('Build Image') {
