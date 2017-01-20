@@ -51,6 +51,12 @@ node('maven') {
        set +e
        set +x
 
+       echo "Here's where we are"
+       pwd
+
+       echo "Here's what else is here..."
+       find . -maxdepth 2
+
        rm -rf oc-build && mkdir -p oc-build/deployments
 
        for t in \$(echo "jar;war;ear" | tr ";" "\\n"); do
@@ -61,7 +67,6 @@ node('maven') {
           fi
        done
        set -e
-
 
        for i in oc-build/deployments/*.war; do
           mv -v oc-build/deployments/\$(basename \$i) oc-build/deployments/ROOT.war
