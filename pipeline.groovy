@@ -48,8 +48,8 @@ node('maven') {
   stage('Build Image') {
 
     sh """
-       set +e
-       set +x
+       set -e
+       set -x
 
        echo "Here's where we are"
        pwd
@@ -66,7 +66,7 @@ node('maven') {
             cp -rfv ./target/*.\$t oc-build/deployments/ 2> /dev/null
           fi
        done
-       set -e
+       set +e
 
        for i in oc-build/deployments/*.war; do
           mv -v oc-build/deployments/\$(basename \$i) oc-build/deployments/ROOT.war
@@ -76,6 +76,7 @@ node('maven') {
        ${ocCmd} new-build --name=${env.APP_NAME}-dev --image-stream=${env.BUILD_IMAGESTREAM} --binary=true --labels=app=${env.APP_NAME} || true
 
        ${ocCmd} start-build ${env.APP_NAME}-dev --from-dir=oc-build --wait=true --follow=true
+       set +x
     """
 
   }
