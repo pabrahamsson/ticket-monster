@@ -51,7 +51,13 @@ node('maven') {
        set -e
        set -x
 
+       echo "Here's where we are"
+       pwd
+
        rm -rf oc-build && mkdir -p oc-build/deployments
+
+       echo "Here's what's here pre-copy..."
+       find . -maxdepth 2
 
        for t in \$(echo "jar;war;ear" | tr ";" "\\n"); do
           if [[ "${env.BUILD_CONTEXT_DIR}" ]] && [[ "${env.BUILD_CONTEXT_DIR}" != null ]]; then
@@ -61,12 +67,8 @@ node('maven') {
           fi
        done
 
-       echo "Here's where we are"
-       pwd
-
        echo "Here's what else is here..."
        find . -maxdepth 2
-
 
        set +e
 
