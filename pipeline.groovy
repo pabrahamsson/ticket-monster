@@ -58,6 +58,7 @@ node('maven') {
             cp -rfv ${env.BUILD_CONTEXT_DIR}/target/*.\$t oc-build/deployments/ 2> /dev/null
           else
             cp -rfv ./target/*.\$t oc-build/deployments/ 2> /dev/null
+          fi
        done
        set -e
 
