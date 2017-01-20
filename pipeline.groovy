@@ -51,23 +51,26 @@ node('maven') {
        set -e
        set -x
 
-       echo "Here's where we are"
+       echo "Environment Variables:"
+       env
+
+       echo "Current Directory:"
        pwd
 
        rm -rf oc-build && mkdir -p oc-build/deployments
 
-       echo "Here's what's here pre-copy..."
+       echo "Directory Contents Before:"
        find . -maxdepth 2
 
        for t in \$(echo "jar;war;ear" | tr ";" "\\n"); do
           if [[ "${env.BUILD_CONTEXT_DIR}" ]] && [[ "${env.BUILD_CONTEXT_DIR}" != null ]]; then
             cp -rfv ${env.BUILD_CONTEXT_DIR}/target/*.\$t oc-build/deployments/ 2> /dev/null || echo "No \$t files"
           else
-            cp -rfv ./target/*.jar oc-build/deployments/ 2> /dev/null || echo "No \$t files"
+            cp -rfv ./target/*.\$t oc-build/deployments/ 2> /dev/null || echo "No \$t files"
           fi
        done
 
-       echo "Here's what else is here..."
+       echo "Directory Contents After:"
        find . -maxdepth 2
 
        set +e
