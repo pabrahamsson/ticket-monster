@@ -51,12 +51,6 @@ node('maven') {
        set -e
        set -x
 
-       echo "Here's where we are"
-       pwd
-
-       echo "Here's what else is here..."
-       find . -maxdepth 2
-
        rm -rf oc-build && mkdir -p oc-build/deployments
 
        for t in \$(echo "jar;war;ear" | tr ";" "\\n"); do
@@ -66,6 +60,14 @@ node('maven') {
             cp -rfv ./target/*.\$t oc-build/deployments/ 2> /dev/null
           fi
        done
+
+       echo "Here's where we are"
+       pwd
+
+       echo "Here's what else is here..."
+       find . -maxdepth 2
+
+
        set +e
 
        for i in oc-build/deployments/*.war; do
