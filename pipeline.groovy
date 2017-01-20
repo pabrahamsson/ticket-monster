@@ -80,9 +80,11 @@ node('maven') {
           break
        done
 
-       ${ocCmd} new-build --name=${env.APP_NAME}-dev --image-stream=${env.BUILD_IMAGESTREAM} --binary=true --labels=app=${env.APP_NAME} || true
+       app_name=echo ${env.JOB_NAME} | sed -e "s/-\?pipeline-\?//" | sed -e "s/-\?${namespace}-\?//"
 
-       ${ocCmd} start-build ${env.APP_NAME}-dev --from-dir=oc-build --wait=true --follow=true
+       ${ocCmd} new-build --name=\${app_name} --image-stream=\${app_name} --binary=true --labels=app=\${app_name} || true
+
+       ${ocCmd} start-build \${app_name} --from-dir=oc-build --wait=true --follow=true
        set +x
     """
 
