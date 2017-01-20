@@ -60,8 +60,8 @@ node('maven') {
        rm -rf oc-build && mkdir -p oc-build/deployments
 
        for t in \$(echo "jar;war;ear" | tr ";" "\\n"); do
-          if [[ "${BUILD_CONTEXT_DIR}" ]]; then
-            cp -rfv ${BUILD_CONTEXT_DIR}/target/*.\$t oc-build/deployments/ 2> /dev/null
+          if [[ "${env.BUILD_CONTEXT_DIR}" ]]; then
+            cp -rfv ${env.BUILD_CONTEXT_DIR}/target/*.\$t oc-build/deployments/ 2> /dev/null
           else
             cp -rfv ./target/*.\$t oc-build/deployments/ 2> /dev/null
           fi
