@@ -7,7 +7,7 @@ spec:
     type: "Git"
     git:
       uri: "https://github.com/etsauer/ticket-monster.git"
-      ref: "2.7.0.Final-with-tutorials"
+      ref: "master"
   triggers:
   - type: "GitHub"
     github:
