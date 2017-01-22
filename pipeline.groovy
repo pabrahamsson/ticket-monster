@@ -80,7 +80,7 @@ node('maven') {
           break
        done
 
-       app_name=echo "${env.JOB_NAME}" | sed -e "s/-\\?pipeline-\\?//" | sed -e "s/-\\?${namespace}-\\?//"
+       app_name=$(echo "${env.JOB_NAME}" | sed -e "s/-\\?pipeline-\\?//" | sed -e "s/-\\?${namespace}-\\?//")
 
        ${ocCmd} new-build --name=\${app_name} --image-stream=\${app_name} --binary=true --labels=app=\${app_name}
 
