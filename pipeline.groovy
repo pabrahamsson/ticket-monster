@@ -64,11 +64,7 @@ node('maven') {
        find . -maxdepth 2
 
        for t in \$(echo "jar;war;ear" | tr ";" "\\n"); do
-          if [[ "${env.BUILD_CONTEXT_DIR}" ]] && [[ "${env.BUILD_CONTEXT_DIR}" != null ]]; then
-            continue
-          else
-            cp -rfv ./target/*.\$t oc-build/deployments/ 2> /dev/null || echo "No \$t files"
-          fi
+         cp -rfv ./target/*.\$t oc-build/deployments/ 2> /dev/null || echo "No \$t files"
        done
 
        echo "Directory Contents After:"
