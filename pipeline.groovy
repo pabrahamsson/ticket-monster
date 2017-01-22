@@ -64,7 +64,7 @@ node('maven') {
 
        for t in \$(echo "jar;war;ear" | tr ";" "\\n"); do
           if [[ "${env.BUILD_CONTEXT_DIR}" ]] && [[ "${env.BUILD_CONTEXT_DIR}" != null ]]; then
-            cp -rfv ${env.BUILD_CONTEXT_DIR}/target/*.\$t oc-build/deployments/ 2> /dev/null || echo "No \$t files"
+            cp -rfv "${env.BUILD_CONTEXT_DIR}/target/*.\$t" oc-build/deployments/ 2> /dev/null || echo "No \$t files"
           else
             cp -rfv ./target/*.\$t oc-build/deployments/ 2> /dev/null || echo "No \$t files"
           fi
