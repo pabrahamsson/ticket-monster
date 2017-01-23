@@ -79,7 +79,9 @@ node('maven') {
 
        app_name=\$(echo "${env.JOB_NAME}" | sed -e "s/-\\?pipeline-\\?//" | sed -e "s/-\\?${namespace}-\\?//")
 
-       ${ocCmd} new-build --name=\${app_name} --image-stream=openshift/jboss-webserver30-tomcat8-openshift --binary=true --labels=app=\${app_name} || exit 1
+       if [[ ! `oc get buildconfig \${app_name} 2>/dev/null` ]]
+         ${ocCmd} new-build --name=\${app_name} --image-stream=openshift/jboss-webserver30-tomcat8-openshift --binary=true --labels=app=\${app_name} || exit 1
+       fi
 
        ${ocCmd} start-build \${app_name} --from-dir=oc-build --wait=true --follow=true || exit 1
        set +x
