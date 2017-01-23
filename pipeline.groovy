@@ -2,8 +2,7 @@
 
 ////
 // This pipeline requires the following plugins:
-// EnvInject: https://wiki.jenkins-ci.org/display/JENKINS/EnvInject+Plugin
-// Pipeline Maven Plugin: https://wiki.jenkins-ci.org/display/JENKINS/Pipeline+Maven+Plugin
+// Kubernetes Plugin 0.10
 ////
 
 String ocpApiServer = env.OCP_API_SERVER ? "${env.OCP_API_SERVER}" : "https://openshift.default.svc.cluster.local"
@@ -97,29 +96,24 @@ node('maven') {
 
 }
 
-input "Promote Application to Stage?"
+input "Promote Application to Prod?"
 
-podTemplate(label: 'jenkins-slave-image-mgmt', containers: [
-    containerTemplate(name: 'jenkins-slave-image-mgmt', image: 'jenkins-slave-image-mgmt:latest')
-  ]) {
+node('jenkins-slave-image-mgmt') {
 
-  node('jenkins-slave-image-mgmt') {
+  def namespace = readFile('/var/run/secrets/kubernetes.io/serviceaccount/namespace').trim()
+  def token = readFile('/var/run/secrets/kubernetes.io/serviceaccount/token').trim()
+  def ocCmd = "oc --token=${token} --server=${ocpApiServer} --certificate-authority=/run/secrets/kubernetes.io/serviceaccount/ca.crt --namespace=${namespace}"
 
-    def namespace = readFile('/var/run/secrets/kubernetes.io/serviceaccount/namespace').trim()
-    def token = readFile('/var/run/secrets/kubernetes.io/serviceaccount/token').trim()
-    def ocCmd = "oc --token=${token} --server=${ocpApiServer} --certificate-authority=/run/secrets/kubernetes.io/serviceaccount/ca.crt --namespace=${namespace}"
+  stage('Promote Application') {
+    sh """
+    set +x
+    imageRegistry=\$(${ocCmd} get is ${env.APP_NAME}-dev --template='{{ .status.dockerImageRepository }}' | cut -d/ -f1)
 
-    stage('Promote Application') {
-      sh """
-      set +x
-      imageRegistry=\$(${ocCmd} get is ${env.APP_NAME}-dev --template='{{ .status.dockerImageRepository }}' | cut -d/ -f1)
+    strippedNamespace=\$(echo ${namespace} | cut -d/ -f1)
 
-      strippedNamespace=\$(echo ${namespace} | cut -d/ -f1)
-
-      echo "Promoting \${imageRegistry}/${namespace}-stage/${env.APP_NAME} -> \${imageRegistry}/\${strippedNamespace}-prod/${env.APP_NAME}"
-      skopeo --tls-verify=false copy --src-creds openshift:${token} --dest-creds openshift:${token} docker://\${imageRegistry}/${namespace}/${env.APP_NAME} docker://\${imageRegistry}/\${strippedNamespace}-prod/${env.APP_NAME}
-      """
-    }
-
+    echo "Promoting \${imageRegistry}/${namespace}-stage/${env.APP_NAME} -> \${imageRegistry}/\${strippedNamespace}-prod/${env.APP_NAME}"
+    skopeo --tls-verify=false copy --src-creds openshift:${token} --dest-creds openshift:${token} docker://\${imageRegistry}/${namespace}/${env.APP_NAME} docker://\${imageRegistry}/\${strippedNamespace}-prod/${env.APP_NAME}
+    """
   }
+
 }
