@@ -9,9 +9,7 @@ String ocpApiServer = env.OCP_API_SERVER ? "${env.OCP_API_SERVER}" : "https://op
 def namespace = readFile('/var/run/secrets/kubernetes.io/serviceaccount/namespace').trim()
 def token = readFile('/var/run/secrets/kubernetes.io/serviceaccount/token').trim()
 def ocCmd = "oc --token=${token} --server=${ocpApiServer} --certificate-authority=/run/secrets/kubernetes.io/serviceaccount/ca.crt --namespace=${namespace}"
-def appName = "${env.JOB_NAME}".replace(/-\?pipeline-\?/, '').replace("/-\?${namespace}-\?/", '')
-
-}
+def appName = "${env.JOB_NAME}".replace(/-?pipeline-?/, '').replace(/-?${namespace}-?/, '')
 
 node('maven') {
 //  def artifactory = Artifactory.server(env.ARTIFACTORY_SERVER)
