@@ -6,10 +6,15 @@
 ////
 
 String ocpApiServer = env.OCP_API_SERVER ? "${env.OCP_API_SERVER}" : "https://openshift.default.svc.cluster.local"
-def namespace = readFile('/var/run/secrets/kubernetes.io/serviceaccount/namespace').trim()
-def token = readFile('/var/run/secrets/kubernetes.io/serviceaccount/token').trim()
-def ocCmd = "oc --token=${token} --server=${ocpApiServer} --certificate-authority=/run/secrets/kubernetes.io/serviceaccount/ca.crt --namespace=${namespace}"
-def appName = "${env.JOB_NAME}".replace(/-?pipeline-?/, '').replace(/-?${namespace}-?/, '')
+
+node('master') {
+
+  def namespace = readFile('/var/run/secrets/kubernetes.io/serviceaccount/namespace').trim()
+  def token = readFile('/var/run/secrets/kubernetes.io/serviceaccount/token').trim()
+  env.OC_CMD = "oc --token=${token} --server=${ocpApiServer} --certificate-authority=/run/secrets/kubernetes.io/serviceaccount/ca.crt --namespace=${namespace}"
+  env.APP_NAME = "${env.JOB_NAME}".replace(/-?pipeline-?/, '').replace(/-?${namespace}-?/, '')
+
+}
 
 node('maven') {
 //  def artifactory = Artifactory.server(env.ARTIFACTORY_SERVER)
@@ -79,7 +84,7 @@ node('maven') {
 
        app_name=\$(echo "${env.JOB_NAME}" | sed -e "s/-\\?pipeline-\\?//" | sed -e "s/-\\?${namespace}-\\?//")
 
-       ${ocCmd} start-build \${app_name} --from-dir=oc-build --wait=true --follow=true || exit 1
+       ${env.OC_CMD} start-build \${app_name} --from-dir=oc-build --wait=true --follow=true || exit 1
        set +x
     """
 
