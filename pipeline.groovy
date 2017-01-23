@@ -113,8 +113,8 @@ node('jenkins-slave-image-mgmt') {
 
     strippedNamespace=\$(echo ${namespace} | cut -d/ -f1)
 
-    echo "Promoting \${imageRegistry}/${namespace}-stage/${env.APP_NAME} -> \${imageRegistry}/\${strippedNamespace}-prod/${env.APP_NAME}"
-    skopeo --tls-verify=false copy --src-creds openshift:${token} --dest-creds openshift:${token} docker://\${imageRegistry}/${namespace}/${env.APP_NAME} docker://\${imageRegistry}/\${strippedNamespace}-prod/${env.APP_NAME}
+    echo "Promoting \${imageRegistry}/${namespace}-stage/\${app_name} -> \${imageRegistry}/\${strippedNamespace}-prod/$\${app_name}"
+    skopeo --tls-verify=false copy --src-creds openshift:${token} --dest-creds openshift:${token} docker://\${imageRegistry}/${namespace}/\${app_name} docker://\${imageRegistry}/\${strippedNamespace}-prod/\${app_name}
     """
   }
 
