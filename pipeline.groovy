@@ -14,7 +14,7 @@ node('maven') {
   // def buildInfo = Artifactory.newBuildInfo()
   // def scannerHome = tool env.SONARQUBE_TOOL
   def mvnHome = "/usr/share/maven/"
-  def mvnCmd = "${mvnHome}/bin/mvn"
+  def mvnCmd = "${mvnHome}bin/mvn"
   def namespace = readFile('/var/run/secrets/kubernetes.io/serviceaccount/namespace').trim()
   def token = readFile('/var/run/secrets/kubernetes.io/serviceaccount/token').trim()
   def ocCmd = "oc --token=${token} --server=${ocpApiServer} --certificate-authority=/run/secrets/kubernetes.io/serviceaccount/ca.crt --namespace=${namespace}"
@@ -25,6 +25,8 @@ node('maven') {
   }
 
   stage('Build') {
+
+    sh "find / -name mvn"
 
     // artifactoryMaven.tool = env.MAVEN_TOOL
     // artifactoryMaven.deployer releaseRepo: env.ARTIFACTORY_DEPLOY_RELEASE_REPO, snapshotRepo: env.ARTIFACTORY_DEPLOY_SNAPSHOT_REPO, server: artifactory
