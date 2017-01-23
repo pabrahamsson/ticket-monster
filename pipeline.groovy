@@ -6,6 +6,12 @@
 ////
 
 String ocpApiServer = env.OCP_API_SERVER ? "${env.OCP_API_SERVER}" : "https://openshift.default.svc.cluster.local"
+def namespace = readFile('/var/run/secrets/kubernetes.io/serviceaccount/namespace').trim()
+def token = readFile('/var/run/secrets/kubernetes.io/serviceaccount/token').trim()
+def ocCmd = "oc --token=${token} --server=${ocpApiServer} --certificate-authority=/run/secrets/kubernetes.io/serviceaccount/ca.crt --namespace=${namespace}"
+def appName = "${env.JOB_NAME}".replace(/-\?pipeline-\?/, '').replace("/-\?${namespace}-\?/", '')
+
+}
 
 node('maven') {
 //  def artifactory = Artifactory.server(env.ARTIFACTORY_SERVER)
@@ -14,9 +20,6 @@ node('maven') {
   // def scannerHome = tool env.SONARQUBE_TOOL
   def mvnHome = "/usr/share/maven/"
   def mvnCmd = "${mvnHome}bin/mvn"
-  def namespace = readFile('/var/run/secrets/kubernetes.io/serviceaccount/namespace').trim()
-  def token = readFile('/var/run/secrets/kubernetes.io/serviceaccount/token').trim()
-  def ocCmd = "oc --token=${token} --server=${ocpApiServer} --certificate-authority=/run/secrets/kubernetes.io/serviceaccount/ca.crt --namespace=${namespace}"
   String pomFileLocation = env.BUILD_CONTEXT_DIR ? "${env.BUILD_CONTEXT_DIR}/pom.xml" : "pom.xml"
 
   stage('SCM Checkout') {
@@ -98,24 +101,26 @@ node('maven') {
 
 input "Promote Application to Prod?"
 
-node('jenkins-slave-image-mgmt') {
+String slaveImage = sh"${ocCmd} get is ${appName} --template='{{ .status.dockerImageRepository }}'"
 
-  def namespace = readFile('/var/run/secrets/kubernetes.io/serviceaccount/namespace').trim()
-  def token = readFile('/var/run/secrets/kubernetes.io/serviceaccount/token').trim()
-  def ocCmd = "oc --token=${token} --server=${ocpApiServer} --certificate-authority=/run/secrets/kubernetes.io/serviceaccount/ca.crt --namespace=${namespace}"
+podTemplate(label: 'jenkins-slave-image-mgmt', containers: [
+  containerTemplate(name: 'jenkins-slave-image-mgmt', image: "${slaveImage}")
+]) {
 
-  stage('Promote To Prod') {
-    sh """
-    app_name=\$(echo "${env.JOB_NAME}" | sed -e "s/-\\?pipeline-\\?//" | sed -e "s/-\\?${namespace}-\\?//")
+  node('jenkins-slave-image-mgmt') {
 
-    set +x
-    imageRegistry=\$(${ocCmd} get is \${app_name} --template='{{ .status.dockerImageRepository }} -n \${app_name}-stage' | cut -d/ -f1)
+    stage('Promote To Prod') {
+      sh """
+      app_name=\$(echo "${env.JOB_NAME}" | sed -e "s/-\\?pipeline-\\?//" | sed -e "s/-\\?${namespace}-\\?//")
 
-    strippedNamespace=\$(echo ${namespace} | cut -d/ -f1)
+      set +x
+      imageRegistry=\$(${ocCmd} get is \${app_name} --template='{{ .status.dockerImageRepository }} -n \${app_name}-stage' | cut -d/ -f1)
 
-    #echo "Promoting \${imageRegistry}/\${strippedNamespace}-stage/\${app_name} -> \${imageRegistry}/\${strippedNamespace}-prod/\${app_name}"
-    skopeo --tls-verify=false copy --src-creds openshift:${token} --dest-creds openshift:${token} docker://\${imageRegistry}/${namespace}/\${app_name} docker://\${imageRegistry}/\${strippedNamespace}-prod/\${app_name}
-    """
+      strippedNamespace=\$(echo ${namespace} | cut -d/ -f1)
+
+      echo "Promoting \${imageRegistry}/\${strippedNamespace}-stage/\${app_name} -> \${imageRegistry}/\${strippedNamespace}-prod/\${app_name}"
+      skopeo --tls-verify=false copy --src-creds openshift:${token} --dest-creds openshift:${token} docker://\${imageRegistry}/${namespace}/\${app_name} docker://\${imageRegistry}/\${strippedNamespace}-prod/\${app_name}
+      """
+    }
   }
-
 }
