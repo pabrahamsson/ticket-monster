@@ -9,10 +9,10 @@ String ocpApiServer = env.OCP_API_SERVER ? "${env.OCP_API_SERVER}" : "https://op
 
 node('master') {
 
-  def namespace = readFile('/var/run/secrets/kubernetes.io/serviceaccount/namespace').trim()
-  def token = readFile('/var/run/secrets/kubernetes.io/serviceaccount/token').trim()
-  env.OC_CMD = "oc --token=${token} --server=${ocpApiServer} --certificate-authority=/run/secrets/kubernetes.io/serviceaccount/ca.crt --namespace=${namespace}"
-  env.APP_NAME = "${env.JOB_NAME}".replace(/-?pipeline-?/, '').replace(/-?${namespace}-?/, '')
+  env.NAMESPACE = readFile('/var/run/secrets/kubernetes.io/serviceaccount/namespace').trim()
+  env.TOKEN = readFile('/var/run/secrets/kubernetes.io/serviceaccount/token').trim()
+  env.OC_CMD = "oc --token=${env.TOKEN} --server=${ocpApiServer} --certificate-authority=/run/secrets/kubernetes.io/serviceaccount/ca.crt --namespace=${env.NAMESPACE}"
+  env.APP_NAME = "${env.JOB_NAME}".replace(/-?pipeline-?/, '').replace(/-?${env.NAMESPACE}-?/, '')
 
 }
 
@@ -82,9 +82,9 @@ node('maven') {
           break
        done
 
-       app_name=\$(echo "${env.JOB_NAME}" | sed -e "s/-\\?pipeline-\\?//" | sed -e "s/-\\?${namespace}-\\?//")
+       app_name=\$(echo "${env.JOB_NAME}" | sed -e "s/-\\?pipeline-\\?//" | sed -e "s/-\\?${env.NAMESPACE}-\\?//")
 
-       ${env.OC_CMD} start-build \${app_name} --from-dir=oc-build --wait=true --follow=true || exit 1
+       ${env.OC_CMD} start-build ${env.APP_NAME} --from-dir=oc-build --wait=true --follow=true || exit 1
        set +x
     """
 
@@ -94,9 +94,9 @@ node('maven') {
 
   stage('Promote To Stage') {
     sh """
-    app_name=\$(echo "${env.JOB_NAME}" | sed -e "s/-\\?pipeline-\\?//" | sed -e "s/-\\?${namespace}-\\?//")
+    app_name=\$(echo "${env.JOB_NAME}" | sed -e "s/-\\?pipeline-\\?//" | sed -e "s/-\\?${env.NAMESPACE}-\\?//")
 
-    ${ocCmd} tag ${namespace}/\${app_name}:latest ${namespace}-stage/\${app_name}:latest
+    ${env.OC_CMD} tag ${env.NAMESPACE}/${env.APP_NAME}:latest ${env.NAMESPACE}-stage/${env.APP_NAME}:latest
     """
   }
 
@@ -104,7 +104,7 @@ node('maven') {
 
 input "Promote Application to Prod?"
 
-String slaveImage = sh"${ocCmd} get is ${appName} --template='{{ .status.dockerImageRepository }}'"
+String slaveImage = sh"${env.OC_CMD} get is ${appName} --template='{{ .status.dockerImageRepository }}'"
 
 podTemplate(label: 'jenkins-slave-image-mgmt', containers: [
   containerTemplate(name: 'jenkins-slave-image-mgmt', image: "${slaveImage}")
@@ -114,15 +114,15 @@ podTemplate(label: 'jenkins-slave-image-mgmt', containers: [
 
     stage('Promote To Prod') {
       sh """
-      app_name=\$(echo "${env.JOB_NAME}" | sed -e "s/-\\?pipeline-\\?//" | sed -e "s/-\\?${namespace}-\\?//")
+      app_name=\$(echo "${env.JOB_NAME}" | sed -e "s/-\\?pipeline-\\?//" | sed -e "s/-\\?${env.NAMESPACE}-\\?//")
 
       set +x
-      imageRegistry=\$(${ocCmd} get is \${app_name} --template='{{ .status.dockerImageRepository }} -n \${app_name}-stage' | cut -d/ -f1)
+      imageRegistry=\$(${env.OC_CMD} get is ${env.APP_NAME} --template='{{ .status.dockerImageRepository }} -n ${env.APP_NAME}-stage' | cut -d/ -f1)
 
-      strippedNamespace=\$(echo ${namespace} | cut -d/ -f1)
+      strippedNamespace=\$(echo ${env.NAMESPACE} | cut -d/ -f1)
 
-      echo "Promoting \${imageRegistry}/\${strippedNamespace}-stage/\${app_name} -> \${imageRegistry}/\${strippedNamespace}-prod/\${app_name}"
-      skopeo --tls-verify=false copy --src-creds openshift:${token} --dest-creds openshift:${token} docker://\${imageRegistry}/${namespace}/\${app_name} docker://\${imageRegistry}/\${strippedNamespace}-prod/\${app_name}
+      echo "Promoting \${imageRegistry}/\${strippedNamespace}-stage/${env.APP_NAME} -> \${imageRegistry}/\${strippedNamespace}-prod/${env.APP_NAME}"
+      skopeo --tls-verify=false copy --src-creds openshift:${env.TOKEN} --dest-creds openshift:${env.TOKEN} docker://\${imageRegistry}/${env.NAMESPACE}/${env.APP_NAME} docker://\${imageRegistry}/\${strippedNamespace}-prod/${env.APP_NAME}
       """
     }
   }
