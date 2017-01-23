@@ -86,7 +86,7 @@ node('maven') {
 
   input "Promote Application to Stage?"
 
-  stage('Promote Application') {
+  stage('Promote To Stage') {
     sh """
     app_name=\$(echo "${env.JOB_NAME}" | sed -e "s/-\\?pipeline-\\?//" | sed -e "s/-\\?${namespace}-\\?//")
 
@@ -104,10 +104,12 @@ node('jenkins-slave-image-mgmt') {
   def token = readFile('/var/run/secrets/kubernetes.io/serviceaccount/token').trim()
   def ocCmd = "oc --token=${token} --server=${ocpApiServer} --certificate-authority=/run/secrets/kubernetes.io/serviceaccount/ca.crt --namespace=${namespace}"
 
-  stage('Promote Application') {
+  stage('Promote To Prod') {
     sh """
+    app_name=\$(echo "${env.JOB_NAME}" | sed -e "s/-\\?pipeline-\\?//" | sed -e "s/-\\?${namespace}-\\?//")
+
     set +x
-    imageRegistry=\$(${ocCmd} get is ${env.APP_NAME}-dev --template='{{ .status.dockerImageRepository }}' | cut -d/ -f1)
+    imageRegistry=\$(${ocCmd} get is \${app_name} --template='{{ .status.dockerImageRepository }} -n \${app_name}-stage' | cut -d/ -f1)
 
     strippedNamespace=\$(echo ${namespace} | cut -d/ -f1)
 
