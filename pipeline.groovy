@@ -89,9 +89,19 @@ node('maven') {
 
   }
 
+  input "Promote Application to Stage?"
+
+  stage('Promote Application') {
+    sh """
+    app_name=\$(echo "${env.JOB_NAME}" | sed -e "s/-\\?pipeline-\\?//" | sed -e "s/-\\?${namespace}-\\?//")
+
+    ${ocCmd} tag ${namespace}/\${app_name} ${namespace}-stage/\${app_name}
+    """
+  }
+
 }
 
-input "Promote Application?"
+input "Promote Application to Stage?"
 
 node('jenkins-slave-image-mgmt') {
 
