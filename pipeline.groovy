@@ -13,16 +13,7 @@ node('master') {
   env.TOKEN = readFile('/var/run/secrets/kubernetes.io/serviceaccount/token').trim()
   env.OC_CMD = "oc --token=${env.TOKEN} --server=${ocpApiServer} --certificate-authority=/run/secrets/kubernetes.io/serviceaccount/ca.crt --namespace=${env.NAMESPACE}"
   env.APP_NAME = "${env.JOB_NAME}".replaceAll(/-?pipeline-?/, '').replaceAll(/-?${env.NAMESPACE}-?/, '')
-
-  def buf = new ByteArrayOutputStream()
-  def newOut = new PrintStream(buf)
-  def saveOut = System.out
-
-  System.out = newOut
-  sh "${env.OC_CMD} get is ${env.APP_NAME} --template=\'{{ .status.dockerImageRepository }}\'"
-  System.out = saveOut
-
-  env.SKOPEO_SLAVE_IMAGE = buf.toString()
+  env.SKOPEO_SLAVE_IMAGE = sh(returnStdout: true, "${env.OC_CMD} get is ${env.APP_NAME} --template=\'{{ .status.dockerImageRepository }}\'").trim()
   println "${env.SKOPEO_SLAVE_IMAGE}"
 
 }
