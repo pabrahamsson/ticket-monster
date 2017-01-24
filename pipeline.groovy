@@ -111,7 +111,7 @@ node('maven') {
 
 input "Promote Application to Prod?"
 
-podTemplate(label: 'jenkins-slave-image-mgmt', containers: [
+podTemplate(label: 'jenkins-slave-image-mgmt', cloud: 'openshift', containers: [
   containerTemplate(name: 'jenkins-slave-image-mgmt', image: "${env.SKOPEO_SLAVE_IMAGE}")
 ]) {
 
