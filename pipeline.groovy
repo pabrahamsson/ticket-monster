@@ -13,6 +13,7 @@ node('master') {
   env.TOKEN = readFile('/var/run/secrets/kubernetes.io/serviceaccount/token').trim()
   env.OC_CMD = "oc --token=${env.TOKEN} --server=${ocpApiServer} --certificate-authority=/run/secrets/kubernetes.io/serviceaccount/ca.crt --namespace=${env.NAMESPACE}"
   env.APP_NAME = "${env.JOB_NAME}".replaceAll(/-?pipeline-?/, '').replaceAll(/-?${env.NAMESPACE}-?/, '')
+  env.SKOPEO_SLAVE_IMAGE = sh"${env.OC_CMD} get is ${env.APP_NAME} --template='{{ .status.dockerImageRepository }}'"
 
 }
 
@@ -106,10 +107,8 @@ node('maven') {
 
 input "Promote Application to Prod?"
 
-String slaveImage = sh"${env.OC_CMD} get is ${env.APP_NAME} --template='{{ .status.dockerImageRepository }}'"
-
 podTemplate(label: 'jenkins-slave-image-mgmt', containers: [
-  containerTemplate(name: 'jenkins-slave-image-mgmt', image: "${slaveImage}")
+  containerTemplate(name: 'jenkins-slave-image-mgmt', image: "${env.SKOPEO_SLAVE_IMAGE}")
 ]) {
 
   node('jenkins-slave-image-mgmt') {
