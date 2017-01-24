@@ -39,6 +39,8 @@ node('maven') {
     //
     // artifactoryMaven.run pom: pomFileLocation , goals: 'clean install', buildInfo: buildInfo
     // artifactory.publishBuildInfo buildInfo
+    sh "find / -name mvn || true"
+
     sh "${mvnCmd} clean install -DskipTests=true -f ${pomFileLocation}"
 
   }
