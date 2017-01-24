@@ -44,6 +44,8 @@ node('maven') {
 
     sh "${mvnCmd} clean install -DskipTests=true -f ${pomFileLocation}"
 
+    input "Continue?"
+
   }
 
   // stage('SonarQube scan') {
