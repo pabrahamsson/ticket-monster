@@ -117,6 +117,8 @@ podTemplate(label: 'jenkins-slave-image-mgmt', cloud: 'openshift', containers: [
 
   node('jenkins-slave-image-mgmt') {
 
+    input "Check slave Image"
+
     stage('Promote To Prod') {
       sh """
 
