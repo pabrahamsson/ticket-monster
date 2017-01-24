@@ -46,8 +46,6 @@ node('maven') {
 
     sh "${mvnCmd} clean install -DskipTests=true -f ${pomFileLocation}"
 
-    input "Continue?"
-
   }
 
   // stage('SonarQube scan') {
@@ -95,9 +93,8 @@ node('maven') {
        set +x
     """
 
+    input "Promote Application to Stage?"
   }
-
-  input "Promote Application to Stage?"
 
   stage('Promote To Stage') {
     sh """
@@ -105,19 +102,17 @@ node('maven') {
 
     ${env.OC_CMD} tag ${env.NAMESPACE}/${env.APP_NAME}:latest ${env.NAMESPACE}-stage/${env.APP_NAME}:latest
     """
+
+    input "Promote Application to Prod?"
   }
 
 }
-
-input "Promote Application to Prod?"
 
 podTemplate(label: 'jenkins-slave-image-mgmt', cloud: 'openshift', containers: [
   containerTemplate(name: 'jenkins-slave-image-mgmt', image: "${env.SKOPEO_SLAVE_IMAGE}")
 ]) {
 
   node('jenkins-slave-image-mgmt') {
-
-    input "Check slave Image"
 
     stage('Promote To Prod') {
       sh """
