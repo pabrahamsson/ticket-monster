@@ -112,14 +112,13 @@ node('maven') {
 input "Promote Application to Prod?"
 
 podTemplate(label: 'jenkins-slave-image-mgmt', cloud: 'openshift', containers: [
-  containerTemplate(name: 'jenkins-slave-image-mgmt', image: "${env.SKOPEO_SLAVE_IMAGE}")
+  containerTemplate(name: 'jenkins-slave-image-mgmt', image: "172.30.170.185:5000/esauer-sandbox/jenkins-slave-image-mgmt")
 ]) {
 
   node('jenkins-slave-image-mgmt') {
 
     stage('Promote To Prod') {
       sh """
-      app_name=\$(echo "${env.JOB_NAME}" | sed -e "s/-\\?pipeline-\\?//" | sed -e "s/-\\?${env.NAMESPACE}-\\?//")
 
       set +x
       imageRegistry=\$(${env.OC_CMD} get is ${env.APP_NAME} --template='{{ .status.dockerImageRepository }} -n ${env.APP_NAME}-stage' | cut -d/ -f1)
