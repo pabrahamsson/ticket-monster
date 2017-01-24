@@ -112,7 +112,7 @@ node('maven') {
 input "Promote Application to Prod?"
 
 podTemplate(label: 'jenkins-slave-image-mgmt', cloud: 'openshift', containers: [
-  containerTemplate(name: 'jenkins-slave-image-mgmt', image: "172.30.170.185:5000/esauer-sandbox/jenkins-slave-image-mgmt")
+  containerTemplate(name: 'jenkins-slave-image-mgmt', image: "${env.SKOPEO_SLAVE_IMAGE}")
 ]) {
 
   node('jenkins-slave-image-mgmt') {
