@@ -104,7 +104,7 @@ node('maven') {
 
 input "Promote Application to Prod?"
 
-String slaveImage = sh"${env.OC_CMD} get is ${appName} --template='{{ .status.dockerImageRepository }}'"
+String slaveImage = sh"${env.OC_CMD} get is ${env.APP_NAME} --template='{{ .status.dockerImageRepository }}'"
 
 podTemplate(label: 'jenkins-slave-image-mgmt', containers: [
   containerTemplate(name: 'jenkins-slave-image-mgmt', image: "${slaveImage}")
