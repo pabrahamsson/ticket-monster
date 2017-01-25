@@ -12,7 +12,13 @@ node('master') {
   env.NAMESPACE = readFile('/var/run/secrets/kubernetes.io/serviceaccount/namespace').trim()
   env.TOKEN = readFile('/var/run/secrets/kubernetes.io/serviceaccount/token').trim()
   env.OC_CMD = "oc --token=${env.TOKEN} --server=${ocpApiServer} --certificate-authority=/run/secrets/kubernetes.io/serviceaccount/ca.crt --namespace=${env.NAMESPACE}"
+
   env.APP_NAME = "${env.JOB_NAME}".replaceAll(/-?pipeline-?/, '').replaceAll(/-?${env.NAMESPACE}-?/, '')
+  def projectBase = "${env.NAMESPACE}".replaceAll(/-dev/, '')
+  env.STAGE1 = "${projectBase}-dev"
+  env.STAGE2 = "${projectBase}-stage"
+  env.STAGE3 = "${projectBase}-prod"
+
   sh(returnStdout: true, script: "${env.OC_CMD} get is jenkins-slave-image-mgmt --template=\'{{ .status.dockerImageRepository }}\' > /tmp/jenkins-slave-image-mgmt.out")
   env.SKOPEO_SLAVE_IMAGE = readFile('/tmp/jenkins-slave-image-mgmt.out').trim()
   println "${env.SKOPEO_SLAVE_IMAGE}"
@@ -87,8 +93,6 @@ node('maven') {
           break
        done
 
-       app_name=\$(echo "${env.JOB_NAME}" | sed -e "s/-\\?pipeline-\\?//" | sed -e "s/-\\?${env.NAMESPACE}-\\?//")
-
        ${env.OC_CMD} start-build ${env.APP_NAME} --from-dir=oc-build --wait=true --follow=true || exit 1
        set +x
     """
@@ -98,9 +102,7 @@ node('maven') {
 
   stage('Promote To Stage') {
     sh """
-    app_name=\$(echo "${env.JOB_NAME}" | sed -e "s/-\\?pipeline-\\?//" | sed -e "s/-\\?${env.NAMESPACE}-\\?//")
-
-    ${env.OC_CMD} tag ${env.NAMESPACE}/${env.APP_NAME}:latest ${env.NAMESPACE}-stage/${env.APP_NAME}:latest
+    ${env.OC_CMD} tag ${env.STAGE1}/${env.APP_NAME}:latest ${env.STAGE2}/${env.APP_NAME}:latest
     """
 
     input "Promote Application to Prod?"
@@ -118,12 +120,12 @@ podTemplate(label: 'jenkins-slave-image-mgmt', cloud: 'openshift', containers: [
       sh """
 
       set +x
-      imageRegistry=\$(${env.OC_CMD} get is ${env.APP_NAME} --template='{{ .status.dockerImageRepository }} -n ${env.APP_NAME}-stage' | cut -d/ -f1)
+      imageRegistry=\$(${env.OC_CMD} get is ${env.APP_NAME} --template='{{ .status.dockerImageRepository }}' -n ${env.STAGE2} | cut -d/ -f1)
 
       strippedNamespace=\$(echo ${env.NAMESPACE} | cut -d/ -f1)
 
-      echo "Promoting \${imageRegistry}/\${strippedNamespace}-stage/${env.APP_NAME} -> \${imageRegistry}/\${strippedNamespace}-prod/${env.APP_NAME}"
-      skopeo --tls-verify=false copy --src-creds openshift:${env.TOKEN} --dest-creds openshift:${env.TOKEN} docker://\${imageRegistry}/${env.NAMESPACE}/${env.APP_NAME} docker://\${imageRegistry}/\${strippedNamespace}-prod/${env.APP_NAME}
+      echo "Promoting \${imageRegistry}/${env.STAGE2}/${env.APP_NAME} -> \${imageRegistry}/${env.STAGE3}/${env.APP_NAME}"
+      skopeo --tls-verify=false copy --src-creds openshift:${env.TOKEN} --dest-creds openshift:${env.TOKEN} docker://\${imageRegistry}/${env.STAGE2}/${env.APP_NAME} docker://\${imageRegistry}/${env.STAGE3}/${env.APP_NAME}
       """
     }
   }
