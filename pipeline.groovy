@@ -98,7 +98,7 @@ node('maven') {
     """
   }
 
-  stage('Verify Dev Deployment')
+  stage('Verify Dev Deployment') {
 
     openshiftVerifyDeployment(deploymentConfig: "${env.APP_NAME}")
 
