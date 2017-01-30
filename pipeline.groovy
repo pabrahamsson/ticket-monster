@@ -96,6 +96,9 @@ node('maven') {
        ${env.OC_CMD} start-build ${env.APP_NAME} --from-dir=oc-build --wait=true --follow=true || exit 1
        set +x
     """
+  }
+
+  stage('Verify Dev Deployment')
 
     openshiftVerifyDeployment(deploymentConfig: "${env.APP_NAME}")
 
