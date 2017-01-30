@@ -97,6 +97,8 @@ node('maven') {
        set +x
     """
 
+    openshiftVerifyDeployment(deploymentConfig: "${env.APP_NAME}")
+
     input "Promote Application to Stage?"
   }
 
