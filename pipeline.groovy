@@ -117,7 +117,7 @@ node('maven') {
 
     openshiftVerifyDeployment(deploymentConfig: "${env.APP_NAME}", namespace: "${STAGE2}")
 
-    input "Promote Application to Stage?"
+    input "Promote Application to Prod?"
   }
 
 }
@@ -149,7 +149,7 @@ podTemplate(label: 'promotion-slave', cloud: 'openshift', containers: [
 
       openshiftVerifyDeployment(deploymentConfig: "${env.APP_NAME}", namespace: "${STAGE3}")
 
-      input "Promote Application to Stage?"
+      println "Application ${env.APP_NAME} is now in Production!"
     }
 
   }
