@@ -115,11 +115,12 @@ node('maven') {
 
 }
 
-podTemplate(label: 'jenkins-slave-image-mgmt', cloud: 'openshift', containers: [
-  containerTemplate(name: 'jenkins-slave-image-mgmt', image: "${env.SKOPEO_SLAVE_IMAGE}", ttyEnabled: true, command: 'cat')
+podTemplate(label: 'promotion-slave', cloud: 'openshift', containers: [
+  containerTemplate(name: 'jenkins-slave-image-mgmt', image: "${env.SKOPEO_SLAVE_IMAGE}", ttyEnabled: true, command: 'cat'),
+  containerTemplate(name: 'jnlp', image: 'jenkinsci/jnlp-slave:2.62-alpine', args: '${computer.jnlpmac} ${computer.name}')
 ]) {
 
-  node('jenkins-slave-image-mgmt') {
+  node('promotion-slave') {
 
     stage('Promote To Prod') {
 
@@ -133,7 +134,7 @@ podTemplate(label: 'jenkins-slave-image-mgmt', cloud: 'openshift', containers: [
 
         echo "Promoting \${imageRegistry}/${env.STAGE2}/${env.APP_NAME} -> \${imageRegistry}/${env.STAGE3}/${env.APP_NAME}"
         skopeo --tls-verify=false copy --src-creds openshift:${env.TOKEN} --dest-creds openshift:${env.TOKEN} docker://\${imageRegistry}/${env.STAGE2}/${env.APP_NAME} docker://\${imageRegistry}/${env.STAGE3}/${env.APP_NAME}
-        """        
+        """
       }
     }
   }
