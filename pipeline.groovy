@@ -122,16 +122,19 @@ podTemplate(label: 'jenkins-slave-image-mgmt', cloud: 'openshift', containers: [
   node('jenkins-slave-image-mgmt') {
 
     stage('Promote To Prod') {
-      sh """
 
-      set +x
-      imageRegistry=\$(${env.OC_CMD} get is ${env.APP_NAME} --template='{{ .status.dockerImageRepository }}' -n ${env.STAGE2} | cut -d/ -f1)
+      container('jenkins-slave-image-mgmt') {
+        sh """
 
-      strippedNamespace=\$(echo ${env.NAMESPACE} | cut -d/ -f1)
+        set +x
+        imageRegistry=\$(${env.OC_CMD} get is ${env.APP_NAME} --template='{{ .status.dockerImageRepository }}' -n ${env.STAGE2} | cut -d/ -f1)
 
-      echo "Promoting \${imageRegistry}/${env.STAGE2}/${env.APP_NAME} -> \${imageRegistry}/${env.STAGE3}/${env.APP_NAME}"
-      skopeo --tls-verify=false copy --src-creds openshift:${env.TOKEN} --dest-creds openshift:${env.TOKEN} docker://\${imageRegistry}/${env.STAGE2}/${env.APP_NAME} docker://\${imageRegistry}/${env.STAGE3}/${env.APP_NAME}
-      """
+        strippedNamespace=\$(echo ${env.NAMESPACE} | cut -d/ -f1)
+
+        echo "Promoting \${imageRegistry}/${env.STAGE2}/${env.APP_NAME} -> \${imageRegistry}/${env.STAGE3}/${env.APP_NAME}"
+        skopeo --tls-verify=false copy --src-creds openshift:${env.TOKEN} --dest-creds openshift:${env.TOKEN} docker://\${imageRegistry}/${env.STAGE2}/${env.APP_NAME} docker://\${imageRegistry}/${env.STAGE3}/${env.APP_NAME}
+        """        
+      }
     }
   }
 }
