@@ -100,7 +100,7 @@ node('maven') {
 
   stage('Verify Dev Deployment') {
 
-    openshiftVerifyDeployment(deploymentConfig: "${env.APP_NAME}", namespace: "${env.STAGE2}")
+    openshiftVerifyDeployment(deploymentConfig: "${env.APP_NAME}", namespace: "${STAGE1}")
 
     input "Promote Application to Stage?"
   }
@@ -111,6 +111,13 @@ node('maven') {
     """
 
     input "Promote Application to Prod?"
+  }
+
+  stage('Verify Dev Deployment') {
+
+    openshiftVerifyDeployment(deploymentConfig: "${env.APP_NAME}", namespace: "${STAGE2}")
+
+    input "Promote Application to Stage?"
   }
 
 }
@@ -137,5 +144,13 @@ podTemplate(label: 'promotion-slave', cloud: 'openshift', containers: [
         """
       }
     }
+
+    stage('Verify Dev Deployment') {
+
+      openshiftVerifyDeployment(deploymentConfig: "${env.APP_NAME}", namespace: "${STAGE3}")
+
+      input "Promote Application to Stage?"
+    }
+
   }
 }
