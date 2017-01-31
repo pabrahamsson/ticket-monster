@@ -82,8 +82,20 @@ node('maven') {
     input "Promote Application to Prod?"
   }
 
+  stage("Promote To ${env.STAGE3}") {
+    sh """
+    ${env.OC_CMD} tag ${env.STAGE2}/${env.APP_NAME}:latest ${env.STAGE3}/${env.APP_NAME}:latest
+    """
+  }
+
+  stage("Verify Deployment to ${env.STAGE3}") {
+
+    openshiftVerifyDeployment(deploymentConfig: "${env.APP_NAME}", namespace: "${STAGE3}", verifyReplicaCount: true)
+
+  }
 }
 
+/*
 podTemplate(label: 'promotion-slave', cloud: 'openshift', containers: [
   containerTemplate(name: 'jenkins-slave-image-mgmt', image: "${env.SKOPEO_SLAVE_IMAGE}", ttyEnabled: true, command: 'cat'),
   containerTemplate(name: 'jnlp', image: 'jenkinsci/jnlp-slave:2.62-alpine', args: '${computer.jnlpmac} ${computer.name}')
@@ -115,5 +127,5 @@ podTemplate(label: 'promotion-slave', cloud: 'openshift', containers: [
 
   }
 }
-
+*/
 println "Application ${env.APP_NAME} is now in Production!"
