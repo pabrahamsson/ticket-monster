@@ -116,7 +116,7 @@ node('maven') {
 }
 
 podTemplate(label: 'jenkins-slave-image-mgmt', cloud: 'openshift', containers: [
-  containerTemplate(name: 'jenkins-slave-image-mgmt', image: "${env.SKOPEO_SLAVE_IMAGE}")
+  containerTemplate(name: 'jenkins-slave-image-mgmt', image: "${env.SKOPEO_SLAVE_IMAGE}", ttyEnabled: true, command: 'cat')
 ]) {
 
   node('jenkins-slave-image-mgmt') {
