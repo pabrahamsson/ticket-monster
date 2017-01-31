@@ -64,7 +64,7 @@ node('maven') {
 
   stage("Verify Deployment to ${env.STAGE1}") {
 
-    openshiftVerifyDeployment(deploymentConfig: "${env.APP_NAME}", namespace: "${STAGE1}")
+    openshiftVerifyDeployment(deploymentConfig: "${env.APP_NAME}", namespace: "${STAGE1}", verifyReplicaCount: true)
 
     input "Promote Application to Stage?"
   }
@@ -77,7 +77,7 @@ node('maven') {
 
   stage("Verify Deployment to ${env.STAGE2}") {
 
-    openshiftVerifyDeployment(deploymentConfig: "${env.APP_NAME}", namespace: "${STAGE2}")
+    openshiftVerifyDeployment(deploymentConfig: "${env.APP_NAME}", namespace: "${STAGE2}", verifyReplicaCount: true)
 
     input "Promote Application to Prod?"
   }
@@ -102,14 +102,14 @@ podTemplate(label: 'promotion-slave', cloud: 'openshift', containers: [
         strippedNamespace=\$(echo ${env.NAMESPACE} | cut -d/ -f1)
 
         echo "Promoting \${imageRegistry}/${env.STAGE2}/${env.APP_NAME} -> \${imageRegistry}/${env.STAGE3}/${env.APP_NAME}"
-        skopeo --tls-verify=false copy --src-creds openshift:${env.TOKEN} --dest-creds openshift:${env.TOKEN} docker://\${imageRegistry}/${env.STAGE2}/${env.APP_NAME} docker://\${imageRegistry}/${env.STAGE3}/${env.APP_NAME}
+        skopeo --tls-verify=false copy --remove-signatures --src-creds openshift:${env.TOKEN} --dest-creds openshift:${env.TOKEN} docker://\${imageRegistry}/${env.STAGE2}/${env.APP_NAME} docker://\${imageRegistry}/${env.STAGE3}/${env.APP_NAME}
         """
       }
     }
 
     stage("Verify Deployment to ${env.STAGE3}") {
 
-      openshiftVerifyDeployment(deploymentConfig: "${env.APP_NAME}", namespace: "${STAGE3}")
+      openshiftVerifyDeployment(deploymentConfig: "${env.APP_NAME}", namespace: "${STAGE3}", verifyReplicaCount: true)
 
     }
 
