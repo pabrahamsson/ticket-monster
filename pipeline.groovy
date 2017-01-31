@@ -69,7 +69,7 @@ node('maven') {
     input "Promote Application to Stage?"
   }
 
-  stage('Promote To Stage') {
+  stage("Promote To ${env.STAGE2}") {
     sh """
     ${env.OC_CMD} tag ${env.STAGE1}/${env.APP_NAME}:latest ${env.STAGE2}/${env.APP_NAME}:latest
     """
@@ -91,7 +91,7 @@ podTemplate(label: 'promotion-slave', cloud: 'openshift', containers: [
 
   node('promotion-slave') {
 
-    stage('Promote To Prod') {
+    stage("Promote To ${env.STAGE3}") {
 
       container('jenkins-slave-image-mgmt') {
         sh """
