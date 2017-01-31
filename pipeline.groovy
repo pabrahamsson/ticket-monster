@@ -109,8 +109,6 @@ node('maven') {
     sh """
     ${env.OC_CMD} tag ${env.STAGE1}/${env.APP_NAME}:latest ${env.STAGE2}/${env.APP_NAME}:latest
     """
-
-    input "Promote Application to Prod?"
   }
 
   stage('Verify Dev Deployment') {
@@ -149,8 +147,9 @@ podTemplate(label: 'promotion-slave', cloud: 'openshift', containers: [
 
       openshiftVerifyDeployment(deploymentConfig: "${env.APP_NAME}", namespace: "${STAGE3}")
 
-      println "Application ${env.APP_NAME} is now in Production!"
     }
 
   }
 }
+
+println "Application ${env.APP_NAME} is now in Production!"
