@@ -100,7 +100,7 @@ node('maven') {
 
   stage('Verify Dev Deployment') {
 
-    openshiftVerifyDeployment(deploymentConfig: "${env.APP_NAME}")
+    openshiftVerifyDeployment(deploymentConfig: "${env.APP_NAME}", namespace: "${env.STAGE2}")
 
     input "Promote Application to Stage?"
   }
