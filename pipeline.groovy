@@ -36,6 +36,7 @@ node('maven') {
 
   stage('SCM Checkout') {
     checkout scm
+    sh "orig=$(pwd); cd $(basename ${pomFileLocation}); git describe --tags; cd $orig"
   }
 
   stage('Build') {
