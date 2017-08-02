@@ -30,7 +30,7 @@ node('maven') {
   // def artifactoryMaven = Artifactory.newMavenBuild()
   // def buildInfo = Artifactory.newBuildInfo()
   // def scannerHome = tool env.SONARQUBE_TOOL
-  def mvnHome = "/usr/share/maven/"
+  def mvnHome = env.MAVEN_HOME ? "${env.MAVEN_HOME}" : "/usr/share/maven/"
   def mvnCmd = "${mvnHome}bin/mvn"
   String pomFileLocation = env.BUILD_CONTEXT_DIR ? "${env.BUILD_CONTEXT_DIR}/pom.xml" : "pom.xml"
 
