@@ -67,7 +67,7 @@ node('maven') {
 
     openshiftVerifyDeployment(deploymentConfig: "${env.APP_NAME}", namespace: "${STAGE1}", verifyReplicaCount: true)
 
-    input "Promote Application to Stage?"
+    //input "Promote Application to Stage?"
   }
 
   stage("Promote To ${env.STAGE2}") {
@@ -80,7 +80,7 @@ node('maven') {
 
     openshiftVerifyDeployment(deploymentConfig: "${env.APP_NAME}", namespace: "${STAGE2}", verifyReplicaCount: true)
 
-    input "Promote Application to Prod?"
+    //input "Promote Application to Prod?"
   }
 
   stage("Promote To ${env.STAGE3}") {
