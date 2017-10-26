@@ -14,7 +14,8 @@ node('master') {
   env.OC_CMD = "oc --token=${env.TOKEN} --server=${ocpApiServer} --certificate-authority=/run/secrets/kubernetes.io/serviceaccount/ca.crt --namespace=${env.NAMESPACE}"
 
   env.APP_NAME = "${env.JOB_NAME}".replaceAll(/-?pipeline-?/, '').replaceAll(/-?${env.NAMESPACE}-?/, '')
-  def projectBase = "${env.NAMESPACE}".replaceAll(/-dev/, '')
+  //def projectBase = "${env.NAMESPACE}".replaceAll(/-dev/, '')
+  def projectBase = "${env.APP_NAME}"
   env.STAGE1 = "${projectBase}-dev"
   env.STAGE2 = "${projectBase}-stage"
   env.STAGE3 = "${projectBase}-prod"
@@ -60,6 +61,12 @@ node('maven') {
        done
 
        ${env.OC_CMD} start-build ${env.APP_NAME} --from-dir=oc-build --wait=true --follow=true || exit 1
+    """
+  }
+
+  stage("Promote To ${env.STAGE1}") {
+    sh """
+    ${env.OC_CMD} tag ${env.NAMESPACE}/${env.APP_NAME}:latest ${env.STAGE1}/${env.APP_NAME}:latest
     """
   }
 
