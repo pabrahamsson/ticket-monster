@@ -65,40 +65,47 @@ node('maven') {
   }
 
   stage("Promote To ${env.STAGE1}") {
-    sh """
-    ${env.OC_CMD} tag ${env.NAMESPACE}/${env.APP_NAME}:latest ${env.STAGE1}/${env.APP_NAME}:latest
-    """
+    openshiftTag(srcStream: "${env.NAMESPACE}/${env.APP_NAME}"}, srcTag: 'latest', destStream: "${env.STAGE1}/${env.APP_NAME}", destTag: 'latest')
+    //sh """
+    //${env.OC_CMD} tag ${env.NAMESPACE}/${env.APP_NAME}:latest ${env.STAGE1}/${env.APP_NAME}:latest
+    //"""
   }
 
   stage("Verify Deployment to ${env.STAGE1}") {
 
-    openshiftVerifyDeployment(deploymentConfig: "${env.APP_NAME}", namespace: "${STAGE1}", verifyReplicaCount: true)
+    openshiftVerifyDeployment(deploymentConfig: "${env.APP_NAME}", namespace: "${env.STAGE1}", verifyReplicaCount: true)
 
     //input "Promote Application to Stage?"
   }
 
   stage("Promote To ${env.STAGE2}") {
-    sh """
-    ${env.OC_CMD} tag ${env.STAGE1}/${env.APP_NAME}:latest ${env.STAGE2}/${env.APP_NAME}:latest
-    """
+    openshiftTag(srcStream: "${env.STAGE1}/${env.APP_NAME}"}, srcTag: 'latest', destStream: "${env.STAGE2}/${env.APP_NAME}", destTag: 'latest')
+    //sh """
+    //${env.OC_CMD} tag ${env.STAGE1}/${env.APP_NAME}:latest ${env.STAGE2}/${env.APP_NAME}:latest
+    //"""
   }
 
   stage("Verify Deployment to ${env.STAGE2}") {
 
-    openshiftVerifyDeployment(deploymentConfig: "${env.APP_NAME}", namespace: "${STAGE2}", verifyReplicaCount: true)
+    openshiftVerifyDeployment(deploymentConfig: "${env.APP_NAME}", namespace: "${env.STAGE2}", verifyReplicaCount: true)
 
     //input "Promote Application to Prod?"
   }
 
   stage("Promote To ${env.STAGE3}") {
-    sh """
-    ${env.OC_CMD} tag ${env.STAGE2}/${env.APP_NAME}:latest ${env.STAGE3}/${env.APP_NAME}:latest
-    """
+    openshiftTag(srcStream: "${env.STAGE2}/${env.APP_NAME}"}, srcTag: 'latest', destStream: "${env.STAGE3}/${env.APP_NAME}", destTag: 'latest')
+    //sh """
+    //${env.OC_CMD} tag ${env.STAGE2}/${env.APP_NAME}:latest ${env.STAGE3}/${env.APP_NAME}:latest
+    //"""
+  }
+
+  stage("Scale out Deployment in ${env.STAGE3}") {
+    openshiftScale(deploymentConfig: "${env.APP_NAME}", replicaCount: 3, verifyReplicaCount: true, namespace: "${env.STAGE3}")
   }
 
   stage("Verify Deployment to ${env.STAGE3}") {
 
-    openshiftVerifyDeployment(deploymentConfig: "${env.APP_NAME}", namespace: "${STAGE3}", verifyReplicaCount: true)
+    openshiftVerifyDeployment(deploymentConfig: "${env.APP_NAME}", namespace: "${env.STAGE3}", verifyReplicaCount: true)
 
   }
 }
