@@ -65,7 +65,7 @@ node('maven') {
   }
 
   stage("Promote To ${env.STAGE1}") {
-    openshiftTag(srcStream: "${env.NAMESPACE}/${env.APP_NAME}"}, srcTag: 'latest', destStream: "${env.STAGE1}/${env.APP_NAME}", destTag: 'latest')
+    openshiftTag(srcStream: "${env.NAMESPACE}/${env.APP_NAME}", srcTag: 'latest', destStream: "${env.STAGE1}/${env.APP_NAME}", destTag: 'latest')
     //sh """
     //${env.OC_CMD} tag ${env.NAMESPACE}/${env.APP_NAME}:latest ${env.STAGE1}/${env.APP_NAME}:latest
     //"""
@@ -79,7 +79,7 @@ node('maven') {
   }
 
   stage("Promote To ${env.STAGE2}") {
-    openshiftTag(srcStream: "${env.STAGE1}/${env.APP_NAME}"}, srcTag: 'latest', destStream: "${env.STAGE2}/${env.APP_NAME}", destTag: 'latest')
+    openshiftTag(srcStream: "${env.STAGE1}/${env.APP_NAME}", srcTag: 'latest', destStream: "${env.STAGE2}/${env.APP_NAME}", destTag: 'latest')
     //sh """
     //${env.OC_CMD} tag ${env.STAGE1}/${env.APP_NAME}:latest ${env.STAGE2}/${env.APP_NAME}:latest
     //"""
@@ -93,7 +93,7 @@ node('maven') {
   }
 
   stage("Promote To ${env.STAGE3}") {
-    openshiftTag(srcStream: "${env.STAGE2}/${env.APP_NAME}"}, srcTag: 'latest', destStream: "${env.STAGE3}/${env.APP_NAME}", destTag: 'latest')
+    openshiftTag(srcStream: "${env.STAGE2}/${env.APP_NAME}", srcTag: 'latest', destStream: "${env.STAGE3}/${env.APP_NAME}", destTag: 'latest')
     //sh """
     //${env.OC_CMD} tag ${env.STAGE2}/${env.APP_NAME}:latest ${env.STAGE3}/${env.APP_NAME}:latest
     //"""
