@@ -83,7 +83,7 @@ node('maven') {
     // Get currently number of replicas of currently active dc or create new one
     dc = sh(returnStatus: true, script: "oc get dc/${env.APP_NAME}-${active_color}")
     if (dc != 0) {
-      sh "oc process blue-green-deploymentconfig -p COLOR=${dest_color} -p NAMESPCE=${env.STAGE1}|oc apply -f -"
+      sh "oc process blue-green-deploymentconfig -p COLOR=${dest_color} -p NAMESPACE=${env.STAGE1}|oc apply -f -"
     } else {
       replicas = sh(returnStdout: true, script: "oc get dc/${env.APP_NAME}-${active_color} -o jsonpath='{ .spec.replicas}'")
       if (replicas > 0) {
