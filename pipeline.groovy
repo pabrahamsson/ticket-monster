@@ -15,7 +15,7 @@ node('master') {
 
   env.APP_NAME = "${env.JOB_NAME}".replaceAll(/-?pipeline-?/, '').replaceAll(/-?${env.NAMESPACE}-?/, '')
   //def projectBase = "${env.NAMESPACE}".replaceAll(/-dev/, '')
-  def projectBase = "${env.APP_NAME}"
+  def projectBase = env.APP_NAME
   env.STAGE1 = "${projectBase}-dev"
   env.STAGE2 = "${projectBase}-stage"
   env.STAGE3 = "${projectBase}-prod"
@@ -34,6 +34,15 @@ node('maven') {
   def mvnHome = env.MAVEN_HOME ? "${env.MAVEN_HOME}" : "/usr/share/maven/"
   def mvnCmd = "mvn"
   String pomFileLocation = env.BUILD_CONTEXT_DIR ? "${env.BUILD_CONTEXT_DIR}/pom.xml" : "pom.xml"
+
+  // Define vars for blue green deployment
+  def active_color = sh(returnStdout: true, script: "oc get route ${env.APP_NAME} -n ${env.STAGE1} -o jsonpath='{ .spec.to.name }'").trim().replaceAll("${env.APP_NAME}-", '')
+  def dest_color = ""
+  if (active_color == "blue") {
+    dest_color = "green"
+  } else {
+    dest_color = "blue"
+  }
 
   stage('SCM Checkout') {
     checkout scm
@@ -70,11 +79,27 @@ node('maven') {
     """
   }
 
+  stage("Deploy to ${env.STAGE1}") {
+    // Get currently number of replicas of currently active dc or create new one
+    dc = sh(returnStatus: true, script: "oc get dc/${env.APP_NAME}-${active_color}")
+    if (dc != 0) {
+      sh "oc process blue-green-deploymentconfig -p COLOR=${dest_color}|oc apply -f -"
+    } else {
+      replicas = sh(returnStdout: true, script: "oc get dc/${env.APP_NAME}-${active_color} -o jsonpath='{ .spec.replicas}'")
+      if (replicas > 0) {
+        openshiftScale(depCfg: "${env.APP_NAME}-${dest_color}", namespace: "${env.STAGE1}", replicaCount: replicas, verifyReplicaCount: true)
+        //sh "oc patch dc/${env.APP_NAME}-${dest_color} -p '{\"spec\":{\"replicas\":${replicas}}}'"
+      } else {
+        openshiftScale(depCfg: "${env.APP_NAME}-${dest_color}", namespace: "${env.STAGE1}", replicaCount: 1, verifyReplicaCount: true)
+        //sh "oc patch dc/${env.APP_NAME}-${dest_color} -p '{\"spec\":{\"replicas\":${replicas}}}'"
+      }
+    }
+  }
   stage("Verify Deployment to ${env.STAGE1}") {
 
     openshiftVerifyDeployment(deploymentConfig: "${env.APP_NAME}", namespace: "${env.STAGE1}", verifyReplicaCount: true)
 
-    //input "Promote Application to Stage?"
+    input "Promote Application to Stage?"
   }
 
   stage("Promote To ${env.STAGE2}") {
