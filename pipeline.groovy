@@ -86,24 +86,24 @@ node('maven') {
       sh "oc process blue-green-deploymentconfig -p APPLICATION_NAME=${env.APP_NAME} -p COLOR=${dest_color} -p NAMESPACE=${env.STAGE1}|oc apply -f -"
       openshiftScale(depCfg: "${env.APP_NAME}-${dest_color}", namespace: "${env.STAGE1}", replicaCount: 1, verifyReplicaCount: true)
     } else {
-      replicas = sh(returnStdout: true, script: "oc get dc/${env.APP_NAME}-${active_color} -o jsonpath='{ .spec.replicas}' -n ${env.STAGE1}")
+      replicas = sh(returnStdout: true, script: "oc get dc/${env.APP_NAME}-${active_color} -o jsonpath='{ .spec.replicas }' -n ${env.STAGE1}")
       if (replicas > 0) {
         openshiftScale(depCfg: "${env.APP_NAME}-${dest_color}", namespace: "${env.STAGE1}", replicaCount: replicas, verifyReplicaCount: true)
-        //sh "oc patch dc/${env.APP_NAME}-${dest_color} -p '{\"spec\":{\"replicas\":${replicas}}}'"
       } else {
         openshiftScale(depCfg: "${env.APP_NAME}-${dest_color}", namespace: "${env.STAGE1}", replicaCount: 1, verifyReplicaCount: true)
-        //sh "oc patch dc/${env.APP_NAME}-${dest_color} -p '{\"spec\":{\"replicas\":${replicas}}}'"
       }
     }
     sh "oc patch route/${env.APP_NAME} -n ${env.STAGE1} -p '{\"spec\":{\"to\":{\"name\":\"${env.APP_NAME}-${dest_color}\"}}}'"
   }
+}
+/*
   stage("Verify Deployment to ${env.STAGE1}") {
 
     openshiftVerifyDeployment(deploymentConfig: "${env.APP_NAME}-${dest_color}", namespace: "${env.STAGE1}", verifyReplicaCount: true)
 
-    input "Promote Application to Stage?"
+    //input "Promote Application to Stage?"
   }
-
+ 
   stage("Promote To ${env.STAGE2}") {
     sh """
     ${env.OC_CMD} tag ${env.STAGE1}/${env.APP_NAME}:latest ${env.STAGE2}/${env.APP_NAME}:latest
@@ -132,7 +132,7 @@ node('maven') {
     openshiftVerifyDeployment(deploymentConfig: "${env.APP_NAME}", namespace: "${env.STAGE3}", verifyReplicaCount: true)
 
   }
-}
+}*/
 
 /*
 podTemplate(label: 'promotion-slave', cloud: 'openshift', containers: [
