@@ -65,10 +65,9 @@ node('maven') {
   }
 
   stage("Promote To ${env.STAGE1}") {
-    openshiftTag(srcStream: "${env.NAMESPACE}/${env.APP_NAME}", srcTag: 'latest', destStream: "${env.STAGE1}/${env.APP_NAME}", destTag: 'latest')
-    //sh """
-    //${env.OC_CMD} tag ${env.NAMESPACE}/${env.APP_NAME}:latest ${env.STAGE1}/${env.APP_NAME}:latest
-    //"""
+    sh """
+    ${env.OC_CMD} tag ${env.NAMESPACE}/${env.APP_NAME}:latest ${env.STAGE1}/${env.APP_NAME}:latest
+    """
   }
 
   stage("Verify Deployment to ${env.STAGE1}") {
@@ -79,10 +78,9 @@ node('maven') {
   }
 
   stage("Promote To ${env.STAGE2}") {
-    openshiftTag(srcStream: "${env.STAGE1}/${env.APP_NAME}", srcTag: 'latest', destStream: "${env.STAGE2}/${env.APP_NAME}", destTag: 'latest')
-    //sh """
-    //${env.OC_CMD} tag ${env.STAGE1}/${env.APP_NAME}:latest ${env.STAGE2}/${env.APP_NAME}:latest
-    //"""
+    sh """
+    ${env.OC_CMD} tag ${env.STAGE1}/${env.APP_NAME}:latest ${env.STAGE2}/${env.APP_NAME}:latest
+    """
   }
 
   stage("Verify Deployment to ${env.STAGE2}") {
@@ -93,10 +91,9 @@ node('maven') {
   }
 
   stage("Promote To ${env.STAGE3}") {
-    openshiftTag(srcStream: "${env.STAGE2}/${env.APP_NAME}", srcTag: 'latest', destStream: "${env.STAGE3}/${env.APP_NAME}", destTag: 'latest')
-    //sh """
-    //${env.OC_CMD} tag ${env.STAGE2}/${env.APP_NAME}:latest ${env.STAGE3}/${env.APP_NAME}:latest
-    //"""
+    sh """
+    ${env.OC_CMD} tag ${env.STAGE2}/${env.APP_NAME}:latest ${env.STAGE3}/${env.APP_NAME}:latest
+    """
   }
 
   stage("Scale out Deployment in ${env.STAGE3}") {
