@@ -7,6 +7,14 @@
 
 String ocpApiServer = env.OCP_API_SERVER ? "${env.OCP_API_SERVER}" : "https://openshift.default.svc.cluster.local"
 
+// define helper functions
+def ocp_object_exist(object, name, namespace) {
+  rc = (sh(returnStatus: true, script: "${env.OC_CMD} get ${object}/${name} -n ${namespace}") == 0) ? true : false
+}
+def ocp_create_dc(app_name, color, namespace) {
+  sh "${env.OC_CMD} process blue-green-deploymentconfig -p APPLICATION_NAME=${app_name} -p COLOR=${color} -p NAMESPACE=${namespace}|${env.OC_CMD} apply -n ${namespace} -f -"
+}
+
 node('master') {
 
   env.NAMESPACE = readFile('/var/run/secrets/kubernetes.io/serviceaccount/namespace').trim()
@@ -42,14 +50,6 @@ node('maven') {
     dest_color = "green"
   } else {
     dest_color = "blue"
-  }
-
-  // define helper functions
-  def ocp_object_exist(object, name, namespace) {
-    rc = (sh(returnStatus: true, script: "${env.OC_CMD} get ${object}/${name} -n ${namespace}") == 0) ? true : false
-  }
-  def ocp_create_dc(app_name, color, namespace) {
-    sh "${env.OC_CMD} process blue-green-deploymentconfig -p APPLICATION_NAME=${app_name} -p COLOR=${color} -p NAMESPACE=${namespace}|${env.OC_CMD} apply -n ${namespace} -f -"
   }
 
   stage('SCM Checkout') {
