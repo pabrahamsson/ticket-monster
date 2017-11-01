@@ -90,7 +90,7 @@ node('maven') {
   stage("Deploy to ${env.STAGE1}") {
     // create deploymentconfigs if !exist
     for (color in ['blue', 'green']) {
-      if !(ocp_object_exist('dc', "${env.APP_NAME}-${color}", env.STAGE1)) {
+      if (!ocp_object_exist('dc', "${env.APP_NAME}-${color}", env.STAGE1)) {
         ocp_create_dc(env.APP_NAME, color, env.STAGE1)
       }
     }
