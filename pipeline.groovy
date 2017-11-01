@@ -83,7 +83,7 @@ node('maven') {
     // Get currently number of replicas of currently active dc or create new one
     dc = sh(returnStatus: true, script: "${env.OC_CMD} get dc/${env.APP_NAME}-${active_color}")
     if (dc != 0) {
-      sh "${env.OC_CMD} process blue-green-deploymentconfig -p APPLICATION_NAME=${env.APP_NAME} -p COLOR=${dest_color} -p NAMESPACE=${env.STAGE1}|${env.OC_CMD} apply -f -"
+      sh "${env.OC_CMD} process blue-green-deploymentconfig -p APPLICATION_NAME=${env.APP_NAME} -p COLOR=${dest_color} -p NAMESPACE=${env.STAGE1}|${env.OC_CMD} apply -n ${env.STAGE1} -f -"
       openshiftScale(depCfg: "${env.APP_NAME}-${dest_color}", namespace: "${env.STAGE1}", replicaCount: 1, verifyReplicaCount: true)
     } else {
       replicas = sh(returnStdout: true, script: "${env.OC_CMD} get dc/${env.APP_NAME}-${active_color} -o jsonpath='{ .spec.replicas }' -n ${env.STAGE1}")
