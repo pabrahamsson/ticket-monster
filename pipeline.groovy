@@ -16,9 +16,9 @@ node('master') {
   env.APP_NAME = "${env.JOB_NAME}".replaceAll(/-?pipeline-?/, '').replaceAll(/-?${env.NAMESPACE}-?/, '')
   //def projectBase = "${env.NAMESPACE}".replaceAll(/-dev/, '')
   def projectBase = env.APP_NAME
-  env.STAGE1 = "${projectBase}-dev"
-  env.STAGE2 = "${projectBase}-stage"
-  env.STAGE3 = "${projectBase}-prod"
+  env.STAGE1 = "${projectBase}-dev-pabraham"
+  env.STAGE2 = "${projectBase}-stage-pabraham"
+  env.STAGE3 = "${projectBase}-prod-pabraham"
 
 //  sh(returnStdout: true, script: "${env.OC_CMD} get is jenkins-slave-image-mgmt --template=\'{{ .status.dockerImageRepository }}\' -n openshift > /tmp/jenkins-slave-image-mgmt.out")
 //  env.SKOPEO_SLAVE_IMAGE = readFile('/tmp/jenkins-slave-image-mgmt.out').trim()
@@ -93,7 +93,10 @@ node('maven') {
         openshiftScale(depCfg: "${env.APP_NAME}-${dest_color}", namespace: "${env.STAGE1}", replicaCount: 1, verifyReplicaCount: true)
       }
     }
-    sh "oc patch route/${env.APP_NAME} -n ${env.STAGE1} -p '{\"spec\":{\"to\":{\"name\":\"${env.APP_NAME}-${dest_color}\"}}}'"
+    rc = sh(returnStatus: true, script: "oc patch route/${env.APP_NAME} -n ${env.STAGE1} -p '{\"spec\":{\"to\":{\"name\":\"${env.APP_NAME}-${dest_color}\"}}}'")
+    if (rc == 0) {
+      openshiftScale(depCfg: "${env.APP_NAME}-${active_color}", namespace: "${env.STAGE1}", replicaCount: 0, verifyReplicaCount: true)
+    }
   }
 }
 /*
