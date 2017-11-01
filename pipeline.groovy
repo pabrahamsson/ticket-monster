@@ -8,7 +8,7 @@
 String ocpApiServer = env.OCP_API_SERVER ? "${env.OCP_API_SERVER}" : "https://openshift.default.svc.cluster.local"
 
 // define helper functions
-def ocp_object_exist(object, name, namespace) {
+Boolean ocp_object_exist(object, name, namespace) {
   rc = (sh(returnStatus: true, script: "${env.OC_CMD} get ${object}/${name} -n ${namespace}") == 0) ? true : false
 }
 def ocp_create_dc(app_name, color, namespace) {
@@ -91,11 +91,13 @@ node('maven') {
     // create deploymentconfigs if !exist
     for (color in ['blue', 'green']) {
       if (!ocp_object_exist('dc', "${env.APP_NAME}-${color}", env.STAGE1)) {
+        println "Creating dc for: ${color}"
         ocp_create_dc(env.APP_NAME, color, env.STAGE1)
       }
     }
     // Get currently number of replicas of currently active dc or create new one
     replicas = sh(returnStdout: true, script: "${env.OC_CMD} get dc/${env.APP_NAME}-${active_color} -o jsonpath='{ .spec.replicas }' -n ${env.STAGE1}")
+    println "Current number of replicas: ${replicas} for: ${active_color}"
     if (replicas > 0) {
       openshiftScale(depCfg: "${env.APP_NAME}-${dest_color}", namespace: "${env.STAGE1}", replicaCount: replicas, verifyReplicaCount: true)
     } else {
