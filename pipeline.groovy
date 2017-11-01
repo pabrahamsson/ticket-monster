@@ -94,7 +94,7 @@ node('maven') {
       }
     }
     rc = sh(returnStatus: true, script: "${env.OC_CMD} patch route/${env.APP_NAME} -n ${env.STAGE1} -p '{\"spec\":{\"to\":{\"name\":\"${env.APP_NAME}-${dest_color}\"}}}'")
-    if (rc == 0) {
+    if (rc == 0 && dc == 0) {
       openshiftScale(depCfg: "${env.APP_NAME}-${active_color}", namespace: "${env.STAGE1}", replicaCount: 0, verifyReplicaCount: true)
     }
   }
