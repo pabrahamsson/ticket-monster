@@ -36,7 +36,7 @@ node('maven') {
   String pomFileLocation = env.BUILD_CONTEXT_DIR ? "${env.BUILD_CONTEXT_DIR}/pom.xml" : "pom.xml"
 
   // Define vars for blue green deployment
-  def active_color = sh(returnStdout: true, script: "oc get route ${env.APP_NAME} -n ${env.STAGE1} -o jsonpath='{ .spec.to.name }'").trim().replaceAll("${env.APP_NAME}-", '')
+  def active_color = sh(returnStdout: true, script: "${env.OC_CMD} get route ${env.APP_NAME} -n ${env.STAGE1} -o jsonpath='{ .spec.to.name }'").trim().replaceAll("${env.APP_NAME}-", '')
   def dest_color = ""
   if (active_color == "blue") {
     dest_color = "green"
@@ -81,19 +81,19 @@ node('maven') {
 
   stage("Deploy to ${env.STAGE1}") {
     // Get currently number of replicas of currently active dc or create new one
-    dc = sh(returnStatus: true, script: "oc get dc/${env.APP_NAME}-${active_color}")
+    dc = sh(returnStatus: true, script: "${env.OC_CMD} get dc/${env.APP_NAME}-${active_color}")
     if (dc != 0) {
-      sh "oc process blue-green-deploymentconfig -p APPLICATION_NAME=${env.APP_NAME} -p COLOR=${dest_color} -p NAMESPACE=${env.STAGE1}|oc apply -f -"
+      sh "${env.OC_CMD} process blue-green-deploymentconfig -p APPLICATION_NAME=${env.APP_NAME} -p COLOR=${dest_color} -p NAMESPACE=${env.STAGE1}|${env.OC_CMD} apply -f -"
       openshiftScale(depCfg: "${env.APP_NAME}-${dest_color}", namespace: "${env.STAGE1}", replicaCount: 1, verifyReplicaCount: true)
     } else {
-      replicas = sh(returnStdout: true, script: "oc get dc/${env.APP_NAME}-${active_color} -o jsonpath='{ .spec.replicas }' -n ${env.STAGE1}")
+      replicas = sh(returnStdout: true, script: "${env.OC_CMD} get dc/${env.APP_NAME}-${active_color} -o jsonpath='{ .spec.replicas }' -n ${env.STAGE1}")
       if (replicas > 0) {
         openshiftScale(depCfg: "${env.APP_NAME}-${dest_color}", namespace: "${env.STAGE1}", replicaCount: replicas, verifyReplicaCount: true)
       } else {
         openshiftScale(depCfg: "${env.APP_NAME}-${dest_color}", namespace: "${env.STAGE1}", replicaCount: 1, verifyReplicaCount: true)
       }
     }
-    rc = sh(returnStatus: true, script: "oc patch route/${env.APP_NAME} -n ${env.STAGE1} -p '{\"spec\":{\"to\":{\"name\":\"${env.APP_NAME}-${dest_color}\"}}}'")
+    rc = sh(returnStatus: true, script: "${env.OC_CMD} patch route/${env.APP_NAME} -n ${env.STAGE1} -p '{\"spec\":{\"to\":{\"name\":\"${env.APP_NAME}-${dest_color}\"}}}'")
     if (rc == 0) {
       openshiftScale(depCfg: "${env.APP_NAME}-${active_color}", namespace: "${env.STAGE1}", replicaCount: 0, verifyReplicaCount: true)
     }
