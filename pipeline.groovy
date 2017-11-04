@@ -8,11 +8,21 @@
 String ocpApiServer = env.OCP_API_SERVER ? "${env.OCP_API_SERVER}" : "https://openshift.default.svc.cluster.local"
 
 // define helper functions
-Boolean ocp_object_exist(object, name, namespace) {
+def Boolean ocp_object_exist(object, name, namespace) {
   rc = (sh(returnStatus: true, script: "${env.OC_CMD} get ${object}/${name} -n ${namespace}") == 0) ? true : false
+  return rc
+}
+def get_active_color(route, namespace) {
+  active_color = sh(returnStdout: true, script: "${env.OC_CMD} get route ${env.APP_NAME} -n ${env.STAGE1} -o jsonpath='{ .spec.to.name }'").trim().replaceAll("${env.APP_NAME}-", '')
+  dest_color = active_color == "blue" ? "green" : "blue"
+  return [active_color, dest_color]
 }
 def ocp_create_dc(app_name, color, namespace) {
   sh "${env.OC_CMD} process blue-green-deploymentconfig -p APPLICATION_NAME=${app_name} -p COLOR=${color} -p NAMESPACE=${namespace}|${env.OC_CMD} apply -n ${namespace} -f -"
+}
+def ocp_get_replicas(dc, namespace) {
+  replicas = sh(returnStdout: true, script: "${env.OC_CMD} get dc/${dc} -o jsonpath='{ .spec.replicas }' -n ${namespace}")
+  return replicas
 }
 
 node('master') {
@@ -43,16 +53,6 @@ node('maven') {
   def mvnCmd = "mvn"
   String pomFileLocation = env.BUILD_CONTEXT_DIR ? "${env.BUILD_CONTEXT_DIR}/pom.xml" : "pom.xml"
 
-  // Define vars for blue green deployment
-  def active_color = sh(returnStdout: true, script: "${env.OC_CMD} get route ${env.APP_NAME} -n ${env.STAGE1} -o jsonpath='{ .spec.to.name }'").trim().replaceAll("${env.APP_NAME}-", '')
-  def dest_color = ""
-  if (active_color == "blue") {
-    dest_color = "green"
-  } else {
-    dest_color = "blue"
-  }
-
-/*
   stage('SCM Checkout') {
     checkout scm
     sh "orig=\$(pwd); cd \$(dirname ${pomFileLocation}); git describe --tags; cd \$orig"
@@ -98,9 +98,12 @@ node('maven') {
       }
     }
     // Get currently number of replicas of currently active dc or create new one
-    replicas = sh(returnStdout: true, script: "${env.OC_CMD} get dc/${env.APP_NAME}-${active_color} -o jsonpath='{ .spec.replicas }' -n ${env.STAGE1}")
+    colors = get_active_color(env.APP_NAME, env.STAGE1)
+    active_color = colors[0]
+    dest_color = colors[1]
+    replicas = ocp_get_replicas("${env.APP_NAME}-${acitve_color}", env.STAGE1)
     println "Current number of replicas: ${replicas} for: ${active_color}"
-    if (replicas > 0) {
+    if (replicas.toInteger() > 0) {
       openshiftScale(depCfg: "${env.APP_NAME}-${dest_color}", namespace: "${env.STAGE1}", replicaCount: replicas, verifyReplicaCount: true)
     } else {
       openshiftScale(depCfg: "${env.APP_NAME}-${dest_color}", namespace: "${env.STAGE1}", replicaCount: 1, verifyReplicaCount: true)
@@ -110,26 +113,36 @@ node('maven') {
       openshiftScale(depCfg: "${env.APP_NAME}-${active_color}", namespace: "${env.STAGE1}", replicaCount: 0, verifyReplicaCount: true)
     }
   }
-}
-/*
-  stage("Verify Deployment to ${env.STAGE1}") {
 
-    openshiftVerifyDeployment(deploymentConfig: "${env.APP_NAME}-${dest_color}", namespace: "${env.STAGE1}", verifyReplicaCount: true)
-
-    //input "Promote Application to Stage?"
-  }
- 
   stage("Promote To ${env.STAGE2}") {
     sh """
     ${env.OC_CMD} tag ${env.STAGE1}/${env.APP_NAME}:latest ${env.STAGE2}/${env.APP_NAME}:latest
     """
   }
 
-  stage("Verify Deployment to ${env.STAGE2}") {
-
-    openshiftVerifyDeployment(deploymentConfig: "${env.APP_NAME}", namespace: "${env.STAGE2}", verifyReplicaCount: true)
-
-    //input "Promote Application to Prod?"
+  stage("Deploy to ${env.STAGE2}") {
+    // create deploymentconfigs if !exist
+    for (color in ['blue', 'green']) {
+      if (!ocp_object_exist('dc', "${env.APP_NAME}-${color}", env.STAGE2)) {
+        println "Creating dc for: ${color}"
+        ocp_create_dc(env.APP_NAME, color, env.STAGE2)
+      }
+    }
+    // Get currently number of replicas of currently active dc or create new one
+    colors = get_active_color(env.APP_NAME, env.STAGE2)
+    active_color = colors[0]
+    dest_color = colors[1]
+    replicas = ocp_get_replicas("${env.APP_NAME}-${acitve_color}", env.STAGE2)
+    println "Current number of replicas: ${replicas} for: ${active_color}"
+    if (replicas.toInteger() > 0) {
+      openshiftScale(depCfg: "${env.APP_NAME}-${dest_color}", namespace: "${env.STAGE2}", replicaCount: replicas, verifyReplicaCount: true)
+    } else {
+      openshiftScale(depCfg: "${env.APP_NAME}-${dest_color}", namespace: "${env.STAGE2}", replicaCount: 1, verifyReplicaCount: true)
+    }
+    rc = sh(returnStatus: true, script: "${env.OC_CMD} patch route/${env.APP_NAME} -n ${env.STAGE2} -p '{\"spec\":{\"to\":{\"name\":\"${env.APP_NAME}-${dest_color}\"}}}'")
+    if (rc == 0) {
+      openshiftScale(depCfg: "${env.APP_NAME}-${active_color}", namespace: "${env.STAGE2}", replicaCount: 0, verifyReplicaCount: true)
+    }
   }
 
   stage("Promote To ${env.STAGE3}") {
@@ -138,16 +151,31 @@ node('maven') {
     """
   }
 
-  stage("Scale out Deployment in ${env.STAGE3}") {
-    openshiftScale(deploymentConfig: "${env.APP_NAME}", replicaCount: 3, verifyReplicaCount: true, namespace: "${env.STAGE3}")
+  stage("Deploy to ${env.STAGE3}") {
+    // create deploymentconfigs if !exist
+    for (color in ['blue', 'green']) {
+      if (!ocp_object_exist('dc', "${env.APP_NAME}-${color}", env.STAGE3)) {
+        println "Creating dc for: ${color}"
+        ocp_create_dc(env.APP_NAME, color, env.STAGE3)
+      }
+    }
+    // Get currently number of replicas of currently active dc or create new one
+    colors = get_active_color(env.APP_NAME, env.STAGE3)
+    active_color = colors[0]
+    dest_color = colors[1]
+    replicas = ocp_get_replicas("${env.APP_NAME}-${acitve_color}", env.STAGE3)
+    println "Current number of replicas: ${replicas} for: ${active_color}"
+    if (replicas.toInteger() > 0) {
+      openshiftScale(depCfg: "${env.APP_NAME}-${dest_color}", namespace: "${env.STAGE3}", replicaCount: replicas, verifyReplicaCount: true)
+    } else {
+      openshiftScale(depCfg: "${env.APP_NAME}-${dest_color}", namespace: "${env.STAGE3}", replicaCount: 1, verifyReplicaCount: true)
+    }
+    rc = sh(returnStatus: true, script: "${env.OC_CMD} patch route/${env.APP_NAME} -n ${env.STAGE3} -p '{\"spec\":{\"to\":{\"name\":\"${env.APP_NAME}-${dest_color}\"}}}'")
+    if (rc == 0) {
+      openshiftScale(depCfg: "${env.APP_NAME}-${active_color}", namespace: "${env.STAGE3}", replicaCount: 0, verifyReplicaCount: true)
+    }
   }
-
-  stage("Verify Deployment to ${env.STAGE3}") {
-
-    openshiftVerifyDeployment(deploymentConfig: "${env.APP_NAME}", namespace: "${env.STAGE3}", verifyReplicaCount: true)
-
-  }
-}*/
+}
 
 /*
 podTemplate(label: 'promotion-slave', cloud: 'openshift', containers: [
