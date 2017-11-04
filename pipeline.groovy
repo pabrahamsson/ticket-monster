@@ -100,7 +100,7 @@ node('maven') {
     colors = get_active_color(env.APP_NAME, env.STAGE1)
     active_color = colors[0]
     dest_color = colors[1]
-    replicas = ocp_get_replicas("${env.APP_NAME}-${acitve_color}", env.STAGE1)
+    replicas = ocp_get_replicas("${env.APP_NAME}-${active_color}", env.STAGE1)
     println "Current number of replicas: ${replicas} for: ${active_color}"
     if (replicas.toInteger() > 0) {
       openshiftScale(depCfg: "${env.APP_NAME}-${dest_color}", namespace: "${env.STAGE1}", replicaCount: replicas, verifyReplicaCount: true)
@@ -131,7 +131,7 @@ node('maven') {
     colors = get_active_color(env.APP_NAME, env.STAGE2)
     active_color = colors[0]
     dest_color = colors[1]
-    replicas = ocp_get_replicas("${env.APP_NAME}-${acitve_color}", env.STAGE2)
+    replicas = ocp_get_replicas("${env.APP_NAME}-${active_color}", env.STAGE2)
     println "Current number of replicas: ${replicas} for: ${active_color}"
     if (replicas.toInteger() > 0) {
       openshiftScale(depCfg: "${env.APP_NAME}-${dest_color}", namespace: "${env.STAGE2}", replicaCount: replicas, verifyReplicaCount: true)
@@ -162,7 +162,7 @@ node('maven') {
     colors = get_active_color(env.APP_NAME, env.STAGE3)
     active_color = colors[0]
     dest_color = colors[1]
-    replicas = ocp_get_replicas("${env.APP_NAME}-${acitve_color}", env.STAGE3)
+    replicas = ocp_get_replicas("${env.APP_NAME}-${active_color}", env.STAGE3)
     println "Current number of replicas: ${replicas} for: ${active_color}"
     if (replicas.toInteger() > 0) {
       openshiftScale(depCfg: "${env.APP_NAME}-${dest_color}", namespace: "${env.STAGE3}", replicaCount: replicas, verifyReplicaCount: true)
