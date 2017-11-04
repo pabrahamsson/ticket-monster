@@ -81,7 +81,6 @@ node('maven') {
        ${env.OC_CMD} start-build ${env.APP_NAME} --from-dir=oc-build --wait=true --follow=true || exit 1
     """
   }
-*/
 
   stage("Promote To ${env.STAGE1}") {
     sh """
